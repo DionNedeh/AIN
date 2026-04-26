@@ -11,13 +11,20 @@ from llama_cpp import Llama
 
 
 class AILocalNotepad:
-    MODEL_PATH = r"C:\Users\.lmstudio\models\lmstudio-community\gemma-4-E2B-it-GGUF\gemma-4-E2B-it-Q4_K_M.gguf"   # Replace with actual model on your system
+    @staticmethod
+    def get_model_path():
+        if getattr(sys, 'frozen', False):
+            base_dir = os.path.dirname(sys.executable)
+        else:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+        return os.path.join(base_dir, "models", "gemma-4-E2B-it-Q4_K_M.gguf")
+
     DEFAULT_SYSTEM_PROMPT = "You are a helpful and concise AI assistant embedded in a notepad application."
     MESSAGE_TOKEN_OVERHEAD = 6
     
     def __init__(self, root):
         self.root = root
-        self.root.title("AIN")
+        self.root.title("NotePartner")
         self.root.geometry("1200x800")
         
         # State variables
@@ -153,7 +160,7 @@ class AILocalNotepad:
     def new_file(self):
         self.text_editor.delete("1.0", tk.END)
         self.current_file = None
-        self.root.title("AI Notepad - Untitled")
+        self.root.title("NotePartner - Untitled")
 
     def open_file(self):
         filepath = filedialog.askopenfilename(defaultextension=".txt",
@@ -165,7 +172,7 @@ class AILocalNotepad:
                 self.text_editor.delete("1.0", tk.END)
                 self.text_editor.insert(tk.END, content)
                 self.current_file = filepath
-                self.root.title(f"AI Notepad - {Path(filepath).name}")
+                self.root.title(f"NotePartner - {Path(filepath).name}")
             except Exception as e:
                 messagebox.showerror("Error", f"Could not read file: {e}")
 
@@ -189,7 +196,7 @@ class AILocalNotepad:
                 with open(filepath, "w", encoding="utf-8") as f:
                     f.write(content)
                 self.current_file = filepath
-                self.root.title(f"AI Notepad - {Path(filepath).name}")
+                self.root.title(f"NotePartner - {Path(filepath).name}")
             except Exception as e:
                 messagebox.showerror("Error", f"Could not save file: {e}")
 
@@ -314,8 +321,9 @@ class AILocalNotepad:
         if self.loading_model or self.llm is not None:
             return
             
-        if not os.path.exists(self.MODEL_PATH):
-            messagebox.showerror("Model Error", f"Model not found at:\n{self.MODEL_PATH}")
+        model_path = self.get_model_path()
+        if not os.path.exists(model_path):
+            messagebox.showerror("Model Error", f"Model not found at:\n{model_path}")
             return
 
         self.loading_model = True
@@ -330,7 +338,7 @@ class AILocalNotepad:
     def load_model(self):
         try:
             llm = Llama(
-                model_path=self.MODEL_PATH,
+                model_path=self.get_model_path(),
                 n_ctx=131072,
                 n_gpu_layers=-1,
                 verbose=False
